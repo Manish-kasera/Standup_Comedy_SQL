@@ -166,3 +166,163 @@ GROUP BY Comedian
 HAVING total_count_more_than_1_million_view > 20
 ORDER BY total_count_more_than_1_million_view DESC;  
 ```
+
+###  11. Which comedian and its video title has the highest like-to-view ratio for their most recent video, and what is the ratio?
+
+```sql
+WITH comedian_latest_video AS
+ ( 
+   SELECT 
+     channel_name,
+     video_title,
+     like_count,
+     view_count,
+     publishedAt,
+     RANK() OVER(
+     PARTITION BY channel_name
+     ORDER BY publishedAt DESC) as ranka
+   FROM indian_standup_comedians
+ )
+
+ SELECT  
+   channel_name,
+   video_title,
+   like_count / view_count as like_to_view_ratio
+ FROM comedian_latest_video
+ WHERE ranka = 1
+ ORDER BY like_to_view_ratio DESC
+ LIMIT 1;
+```
+
+### 12. Identify comedians who have a higher total comment count in 2021 compared to 2020.
+
+``` sql
+WITH comedian_2021_comments AS
+ (
+   SELECT 
+     channel_name AS Comedian,
+   SUM(commentCount) AS total_comments_2021
+   FROM indian_standup_comedians
+   WHERE EXTRACT(YEAR FROM publishedAt) = 2021
+   GROUP BY channel_name
+ ),
+
+ comedian_2020_comments AS
+ (
+   SELECT 
+     channel_name AS Comedian,
+   SUM(commentCount) AS total_comments_2020
+   FROM indian_standup_comedians
+   WHERE EXTRACT(YEAR FROM publishedAt) = 2020
+   GROUP BY channel_name
+ )
+
+SELECT  
+   C1.Comedian,
+   total_comments_2021,
+   total_comments_2020 
+FROM comedian_2021_comments AS C1
+INNER JOIN comedian_2020_comments AS C2
+ON C1.Comedian = C2.Comedian
+WHERE total_comments_2021 > total_comments_2020;
+```
+
+### 13.For each comedian, calculate the average number of likes per video and compare it with the overall average of all comedians. List those who exceed the overall average.
+
+```sql
+
+WITH avg_like_all_comedian AS
+(
+  SELECT 
+    AVG(like_count) AS overall_avg_all_comedian
+  FROM indian_standup_comedians  
+),
+
+avg_like_each_comedian AS
+(
+SELECT 
+  channel_name as Comedian,
+  AVG(like_count) AS avg_like_per_video
+FROM indian_standup_comedians 
+GROUP BY Comedian
+)
+
+SELECT * FROM avg_like_each_comedian 
+WHERE avg_like_per_video > (SELECT overall_avg_all_comedian FROM avg_like_all_comedian);
+```
+
+### 14.Find the comedian who consistently gained more views over time (i.e., whose videos have an increasing view count trend over successive uploads).
+
+```sql
+
+ WITH ranked_videos AS (
+    SELECT 
+     channel_name AS Comedian, 
+     video_title, 
+     view_count, 
+     publishedAt,
+   ROW_NUMBER() OVER (
+     PARTITION BY channel_name 
+     ORDER BY publishedAt) AS video_rank
+    FROM indian_standup_comedians
+),
+
+view_trend AS (
+    SELECT 
+      rv1.Comedian, 
+      rv1.video_rank, 
+      rv1.view_count, 
+      rv2.view_count AS prev_view_count
+    FROM ranked_videos rv1
+    LEFT JOIN ranked_videos rv2
+    ON rv1.Comedian = rv2.Comedian 
+    AND rv1.video_rank = rv2.video_rank + 1
+    WHERE rv2.view_count IS NOT NULL
+)
+SELECT Comedian
+FROM view_trend
+GROUP BY Comedian
+HAVING COUNT(*) = SUM(CASE WHEN view_count > prev_view_count THEN 1 ELSE 0 END);
+
+```
+
+### 15.Determine the top 5 comedians who have shown the greatest improvement in like-to-view ratio from their earliest to latest video.
+
+```sql
+
+WITH Comedian_latest_video AS
+(
+  SELECT
+    channel_name AS Comedian,
+    (like_count/view_count) AS latest_like_to_view_ratio, 
+    publishedAt,
+    RANK() OVER(
+    PARTITION BY channel_name
+    ORDER BY publishedAt DESC) as ranka1
+  FROM indian_standup_comedians
+),
+
+Comedian_earliest_video AS
+(
+  SELECT
+    channel_name AS Comedian,
+    (like_count/view_count) AS earliest_like_to_view_ratio, 
+    publishedAt,
+    RANK() OVER(
+    PARTITION BY channel_name
+    ORDER BY publishedAt ASC) as ranka2
+  FROM indian_standup_comedians
+)
+
+SELECT 
+   C1.Comedian,
+   (latest_like_to_view_ratio - earliest_like_to_view_ratio) as ratio_improvement
+FROM  Comedian_latest_video AS C1
+INNER JOIN Comedian_earliest_video AS C2
+ON C1.Comedian = C2.Comedian
+AND ranka1 = 1 AND ranka2 = 1
+ORDER BY ratio_improvement DESC
+LIMIT 5;
+
+```
+
