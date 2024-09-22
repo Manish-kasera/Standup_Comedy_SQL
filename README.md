@@ -53,7 +53,7 @@ FROM indian_standup_comedians
 ORDER BY channel_name ASC;  
 ```
 
-### 2. Find the total number of videos uploaded by each comedian(channel_name) and sort From highest total video to lowest .
+### 2. Find the total number of videos uploaded by each comedian(channel_name) and sort From highest total video to lowest.
 
 ```sql
 SELECT
@@ -87,7 +87,7 @@ FROM indian_standup_comedians
 WHERE EXTRACT(YEAR FROM publishedAt) = 2022;
 ```
 
-###  5. Find the total number of likes for a all comedian's sort by highest like to lowest like
+###  5. Find the total number of likes for a all comedian's sort by highest like to lowest.
 
 ```sql
  SELECT 
@@ -99,7 +99,7 @@ ORDER BY total_number_of_like DESC;
 ```
 
 
-### 6. List comedians who have uploaded more than 100 videos sort from highest total_number of videos to lowest 
+### 6. List comedians who have uploaded more than 100 videos sort from highest total_number of videos to lowest.
 
 ```sql
 SELECT 
@@ -146,7 +146,7 @@ LIMIT 3;
  ORDER BY view_count DESC;  
 ```
 
-### 10. Identify comedians who have more than 20 videos with over 1 million views.Sort them by total count more than 1 million view
+### 10. Identify comedians who have more than 20 videos with over 1 million views.Sort them by total count more than 1 million view.
 
 ```sql
 WITH  comedian_views AS
